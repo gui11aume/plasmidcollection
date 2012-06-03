@@ -17,7 +17,10 @@ import models
 
 
 BASE_DIR = os.path.dirname(__file__)
-TEMPLATE_DIRS = [os.path.abspath(os.path.join(BASE_DIR, 'templates'))]
+TEMPLATE_DIRS = [
+   os.path.abspath(os.path.join(BASE_DIR, dir))
+   for dir in ('thegrandlocus_theme', 'templates')
+]
 
 
 def enforce_login(parent):
@@ -31,7 +34,7 @@ def enforce_login(parent):
       parent.redirect(users.create_login_url(parent.request.uri))
 
 
-class PostForm(djangoforms.ModelForm):
+class PlasmidForm(djangoforms.ModelForm):
    name = forms.CharField(
        widget = forms.TextInput(attrs={'id':'name'})
    )
@@ -77,7 +80,33 @@ class TemplateHandler(webapp.RequestHandler):
 
       self.response.out.write(rendered)
 
+
+
+class Handler(TemplateHandler):
+
    def get(self):
       enforce_login(self)
-      form = PostForm()
-      self.template_render('base.html', { 'form':form })
+      form = PlasmidForm()
+      self.template_render('empty.html', { 'form': form })
+
+   def post(self):
+      enforce_login(self)
+      try:
+         last = models.Plasmid().gql("ORDER BY plasmid_id DESC LIMIT 1")[0]
+         plasmid_id = 1 + last.plasmid_id
+      except IndexError:
+         plasmid_id = 1
+      new_plasmid = models.Plasmid(
+          key_name = str(plasmid_id),
+          plasmid_id = plasmid_id,
+	  name = self.request.get('name'),
+	  seq = self.request.get('seq'),
+	  comments = self.request.get('comments'),
+	  features = str(self.request.get('features'))
+      )
+      new_plasmid.put()
+      self.template_render('done.html')
+
+          
+   # models.Plasmid.get_by_key_name(id)
+

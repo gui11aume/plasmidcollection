@@ -14,7 +14,7 @@ import handlers
 
 
 application = webapp.WSGIApplication([
-  ('/.*', handlers.TemplateHandler),
+  ('/.*', handlers.Handler),
 ])
 
 

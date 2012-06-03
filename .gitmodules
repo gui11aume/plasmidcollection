@@ -1,0 +1,3 @@
+[submodule "thegrandlocus_theme"]
+	path = thegrandlocus_theme
+	url = git://github.com/gui11aume/thegrandlocus_theme

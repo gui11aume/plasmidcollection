@@ -1,25 +1,28 @@
 from google.appengine.ext import db
 
 class Plasmid(db.Model):
-   creation_date = db.DateTimeProperty(auto_now_add=False) 
+   creation_date = db.DateTimeProperty(auto_now_add=True) 
    plasmid_id = db.IntegerProperty()
-   box_num = db.IntegerProperty()
-   row_num = db.IntegerProperty()
-   col_num = db.IntegerProperty()
    name = db.StringProperty()
    seq = db.TextProperty()
    comments = db.TextProperty()
    features = db.BlobProperty()
 
    @property
-   def row_char(self):
-      return { 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E',
-               6: 'F', 7: 'G', 8: 'H', 9: 'I' }.get(self.row, '#')
+   def location_tupe(self):
+      x = self.plasmid_id - 1
+      # Write 'x' in base 9: 81*a + 9*b + c.
+      a = (x) / 81
+      b = (x - 81*a) / 9
+      c = (x - 81*a - 9*b)
+      return (a+1, b+1, c+1)
 
    @property
-   def location(self):
+   def location_string(self):
+      (box, row, col) = self.location_tupe()
+
       return '%(box)d-%(row)s%(col)d' % {
-         'box': self.box_num,
-         'row': self.row_char,
-         'col': self.col_num
+         'box': box,
+         'col': col,
+         'row': '-ABCDEGFHI'[row]
       }
