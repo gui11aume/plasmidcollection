@@ -1,0 +1,8 @@
+indexes:
+
+- kind: Prep
+  properties:
+  - name: plasmid_id
+  - name: id
+    direction: desc
+

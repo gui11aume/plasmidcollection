@@ -1,0 +1,29 @@
+{% extends "lab.html" %}
+{% block title %}
+Plasmid Collection | Genome Architecture Lab
+{% endblock %}
+{% block body %}
+<br/>
+<br/>
+<p style="text-align:center">
+  <span style="font-size:48pt">&#8226;</span><br/>
+  <span style="font-size:24pt">Plasmid Collection<br/></span>
+  <hr style="border:0px; color:black; background-color:black; width:70%; height:1px;"/>
+</p>
+
+<br/>
+<br/>
+ 
+  {% if message %}
+  <p id="message">{{ message }}</p>
+  {% endif %}
+
+  <h2>Enter new {{ entity }}</h2>
+
+  <form method="post" action="">
+  <table>
+    {{form}}
+  </table>
+  <input type="submit" value="Submit" />
+  </form>
+{% endblock %}

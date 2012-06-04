@@ -24,7 +24,7 @@ TEMPLATE_DIRS = [
 
 
 def enforce_login(parent):
-   """Convenience function to user log-in."""
+   """Convenience function to enforce user log-in."""
    # Get user login status.
    user = users.get_current_user()
    if user:
@@ -34,6 +34,31 @@ def enforce_login(parent):
       parent.redirect(users.create_login_url(parent.request.uri))
 
 
+def get_new_entity_id(entity):
+   """Return the id for a new entity."""
+   model = {
+      'plasmid': models.Plasmid(),
+      'prep':    models.Prep(),
+   }
+   try:
+      last_entity = model[entity].gql("ORDER BY id DESC LIMIT 1")[0]
+      return 1 + last_entity.id
+   except IndexError:
+      return 1
+
+
+def get_str_id(plasmid_id):
+   """Return the str_id of for a new Prep object."""
+   QUERY = "WHERE plasmid_id = :1 ORDER BY id DESC LIMIT 1"
+   try:
+      last_entity = models.Prep().gql(QUERY, plasmid_id)[0]
+      _id = 1 + last_entity.id
+   except IndexError:
+      _id = 1
+   return '%s-%s' % (plasmid_id, '-ABCDEFGHIJKLMNOPQRSTUVWXYZ'[_id])
+
+
+# Django forms objects.
 class PlasmidForm(djangoforms.ModelForm):
    name = forms.CharField(
        widget = forms.TextInput(attrs={'id':'name'})
@@ -58,8 +83,22 @@ class PlasmidForm(djangoforms.ModelForm):
       model = models.Plasmid
       fields = ['name', 'seq', 'comments', 'features']
 
+class PrepForm(djangoforms.ModelForm):
+   plasmid_id = forms.CharField(
+       widget = forms.TextInput(attrs={'id':'plasmid_id'})
+   )
+   comments = forms.CharField(
+       widget = forms.Textarea(
+           attrs = {'id':'comments', 'rows':10, 'cols':20}
+       )
+   )
+
+   class Meta:
+      model = models.Prep
+      fields = ['plasmid_id', 'comments']
 
 
+# Request handlers.
 class TemplateHandler(webapp.RequestHandler):
    """A base handler to implement Django template rendering."""
 
@@ -81,32 +120,81 @@ class TemplateHandler(webapp.RequestHandler):
       self.response.out.write(rendered)
 
 
-
-class Handler(TemplateHandler):
+class ListingHandler(TemplateHandler):
 
    def get(self):
+      prep_count = models.Prep().all().count()
+      preps = models.Prep().all().fetch(prep_count)
+      template_vals = { 'prep_list': preps }
+      self.template_render('prep_listing.html', template_vals)
+
+
+class NewPrepHandler(TemplateHandler):
+
+   def get(self):
+      """Handle new prep form query."""
       enforce_login(self)
-      form = PlasmidForm()
-      self.template_render('empty.html', { 'form': form })
+      template_vals = {
+         'form': PrepForm(),
+         'entity': 'prep',
+         'message': None,
+      }
+      self.template_render('new_entity.html', template_vals)
 
    def post(self):
+      """Handle new prep data post."""
       enforce_login(self)
-      try:
-         last = models.Plasmid().gql("ORDER BY plasmid_id DESC LIMIT 1")[0]
-         plasmid_id = 1 + last.plasmid_id
-      except IndexError:
-         plasmid_id = 1
-      new_plasmid = models.Plasmid(
-          key_name = str(plasmid_id),
+      id = get_new_entity_id('prep')
+      plasmid_id = self.request.get('plasmid_id')
+      plasmid_name = models.Plasmid.get_by_key_name(plasmid_id).name
+      str_id = get_str_id(self.request.get('plasmid_id'))
+      new_prep = models.Prep(
+          key_name = str(),
+          id = id,
           plasmid_id = plasmid_id,
+          plasmid_name = plasmid_name,
+          str_id = str_id,
+	  comments = self.request.get('comments')
+      )
+      new_prep.put()
+      message = 'Prep %s stored to the database.' % str_id,
+
+      template_vals = {
+         'form': PrepForm(),
+         'entity': 'prep',
+         'message': message,
+      }
+      self.template_render('new_entity.html', template_vals)
+
+
+class NewPlasmidHandler(TemplateHandler):
+
+   def get(self):
+      """Handle new plasmid form query."""
+      enforce_login(self)
+      template_vals = {
+         'form': PlasmidForm().
+         'entity': 'plasmid',
+         'message': None,
+      }
+      self.template_render('new_entity.html', template_vals)
+
+   def post(self):
+      """Handle new plasmid data post."""
+      enforce_login(self)
+      id = get_new_entity_id('plasmid')
+      new_plasmid = models.Plasmid(
+          key_name = str(id),
+          id = id,
 	  name = self.request.get('name'),
 	  seq = self.request.get('seq'),
 	  comments = self.request.get('comments'),
 	  features = str(self.request.get('features'))
       )
       new_plasmid.put()
-      self.template_render('done.html')
-
-          
-   # models.Plasmid.get_by_key_name(id)
-
+      template_vals = {
+         'form': PlasmidForm(),
+         'entity': 'plasmid',
+         'message': 'Plasmid #%d stored to the database.' % id,
+      }
+      self.template_render('new_entity.html', template_vals)

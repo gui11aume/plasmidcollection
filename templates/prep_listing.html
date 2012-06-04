@@ -1,0 +1,31 @@
+{% extends "lab.html" %}
+{% block title %}
+Plasmid Collection | Genome Architecture Lab
+{% endblock %}
+
+{% block body %}
+<br/>
+<br/>
+<p style="text-align:center">
+  <span style="font-size:48pt">&#8226;</span><br/>
+  <span style="font-size:24pt">Plasmid Collection<br/></span>
+  <hr style="border:0px; color:black; background-color:black; width:70%; height:1px;"/>
+</p>
+
+<br/>
+<br/>
+
+    <table id="prep_list">
+    {% for prep in prep_list %}
+       <tr class="plasmid_row">
+         <td>{{prep.plasmid_id}}</td>
+         <td>{{prep.str_id}}</td>
+         <td>{{prep.location_string}}</td>
+       </tr>
+    {% endfor %}
+    </table>
+
+    <a href="/newprep">New prep</a>
+    <br/>
+    <a href="/newplasmid">New plasmid</a>
+{% endblock %}
