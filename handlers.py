@@ -55,33 +55,35 @@ def get_str_id(plasmid_id):
       _id = 1 + last_entity.id
    except IndexError:
       _id = 1
-   return '%s-%s' % (plasmid_id, '-ABCDEFGHIJKLMNOPQRSTUVWXYZ'[_id])
+   return '%d-%s' % (plasmid_id, '-ABCDEFGHIJKLMNOPQRSTUVWXYZ'[_id])
 
 
 # Django forms objects.
 class PlasmidForm(djangoforms.ModelForm):
    name = forms.CharField(
-       widget = forms.TextInput(attrs={'id':'name'})
+       widget = forms.TextInput(
+           attrs={'id':'name', 'size':30})
    )
    seq = forms.CharField(
        widget = forms.Textarea(
-           attrs = {'id':'seq', 'rows':10, 'cols':20}
-       )
-   )
-   comments = forms.CharField(
-       widget = forms.Textarea(
-           attrs = {'id':'comments', 'rows':10, 'cols':20}
+           attrs = {'id':'seq', 'rows':5, 'cols':30}
        )
    )
    features = forms.CharField(
        widget = forms.Textarea(
-           attrs = {'id':'features', 'rows':10, 'cols':20}
+           attrs = {'id':'features', 'rows':5, 'cols':30}
+       )
+   )
+   comments = forms.CharField(
+       widget = forms.Textarea(
+           attrs = {'id':'comments', 'rows':2, 'cols':30}
        )
    )
 
    class Meta:
       model = models.Plasmid
-      fields = ['name', 'seq', 'comments', 'features']
+      fields = ['name', 'seq', 'features', 'comments']
+
 
 class PrepForm(djangoforms.ModelForm):
    plasmid_id = forms.CharField(
@@ -89,7 +91,7 @@ class PrepForm(djangoforms.ModelForm):
    )
    comments = forms.CharField(
        widget = forms.Textarea(
-           attrs = {'id':'comments', 'rows':10, 'cols':20}
+           attrs = {'id':'comments', 'rows':2, 'cols':30}
        )
    )
 
@@ -144,20 +146,24 @@ class NewPrepHandler(TemplateHandler):
    def post(self):
       """Handle new prep data post."""
       enforce_login(self)
-      id = get_new_entity_id('prep')
-      plasmid_id = self.request.get('plasmid_id')
-      plasmid_name = models.Plasmid.get_by_key_name(plasmid_id).name
-      str_id = get_str_id(self.request.get('plasmid_id'))
-      new_prep = models.Prep(
-          key_name = str(),
-          id = id,
-          plasmid_id = plasmid_id,
-          plasmid_name = plasmid_name,
-          str_id = str_id,
-	  comments = self.request.get('comments')
-      )
-      new_prep.put()
-      message = 'Prep %s stored to the database.' % str_id,
+      try:
+         id = get_new_entity_id('prep')
+            # Raises an Exception if plasmid does not exist.
+         plasmid_id = models.Plasmid.get_by_key_name(
+             self.request.get('plasmid_id')).id
+         new_prep = models.Prep(
+             key_name = str(id),
+             id = id,
+             plasmid_id = plasmid_id,
+             str_id = get_str_id(plasmid_id),
+             comments = self.request.get('comments')
+         )
+         new_prep.put()
+         message = 'Prep %s has been stored.' % new_prep.str_id
+      except AttributeError:
+         message = 'Specified plasmid does not exist.'
+      except:
+         message = 'Input error.'
 
       template_vals = {
          'form': PrepForm(),
@@ -173,7 +179,7 @@ class NewPlasmidHandler(TemplateHandler):
       """Handle new plasmid form query."""
       enforce_login(self)
       template_vals = {
-         'form': PlasmidForm().
+         'form': PlasmidForm(),
          'entity': 'plasmid',
          'message': None,
       }
@@ -186,15 +192,15 @@ class NewPlasmidHandler(TemplateHandler):
       new_plasmid = models.Plasmid(
           key_name = str(id),
           id = id,
-	  name = self.request.get('name'),
-	  seq = self.request.get('seq'),
-	  comments = self.request.get('comments'),
+	  name = str(self.request.get('name')),
+	  seq = str(self.request.get('seq')),
+	  comments = str(self.request.get('comments')),
 	  features = str(self.request.get('features'))
       )
       new_plasmid.put()
       template_vals = {
          'form': PlasmidForm(),
          'entity': 'plasmid',
-         'message': 'Plasmid #%d stored to the database.' % id,
+         'message': 'Plasmid #%d has been stored.' % id,
       }
       self.template_render('new_entity.html', template_vals)
