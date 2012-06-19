@@ -1,0 +1,14 @@
+{% extends "plasmidcollection.html" %}
+{% block body %}
+<br/>
+<br/>
+ 
+  <h2>Prep {{prep.str_id}} ({{plasmid.name}})</h2>
+
+  <table>
+    <tr><td>Sequence</td><td>{{plasmid.seq}}</td></tr>
+    <tr><td>Comments</td><td>{{plasmid.comments}}</td></tr>
+    <tr><td>Features</td><td>{{plasmid.features}}</td></tr>
+  </table>
+
+{% endblock %}

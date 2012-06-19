@@ -14,6 +14,8 @@ import handlers
 
 
 application = webapp.WSGIApplication([
+  ('/prep/(.*)', handlers.PrepHandler),
+  ('/plasmid/(.*)', handlers.PlasmidHandler),
   ('/newplasmid', handlers.NewPlasmidHandler),
   ('/newprep', handlers.NewPrepHandler),
   ('/.*', handlers.ListingHandler),

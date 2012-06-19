@@ -61,21 +61,21 @@ def get_str_id(plasmid_id):
 # Django forms objects.
 class PlasmidForm(djangoforms.ModelForm):
    name = forms.CharField(
-       widget = forms.TextInput(attrs={'id':'name'})
+       widget = forms.TextInput(attrs={'id':'name', 'class':'input'})
    )
    seq = forms.CharField(
        widget = forms.Textarea(
-           attrs = {'id':'seq', 'rows':10, 'cols':20}
+           attrs = {'id':'seq', 'rows':10, 'cols':20, 'class':'input'}
        )
    )
    comments = forms.CharField(
        widget = forms.Textarea(
-           attrs = {'id':'comments', 'rows':10, 'cols':20}
+           attrs = {'id':'comments', 'rows':10, 'cols':20, 'class':'input'}
        )
    )
    features = forms.CharField(
        widget = forms.Textarea(
-           attrs = {'id':'features', 'rows':10, 'cols':20}
+           attrs = {'id':'features', 'rows':10, 'cols':20, 'class':'input'}
        )
    )
 
@@ -85,11 +85,11 @@ class PlasmidForm(djangoforms.ModelForm):
 
 class PrepForm(djangoforms.ModelForm):
    plasmid_id = forms.CharField(
-       widget = forms.TextInput(attrs={'id':'plasmid_id'})
+       widget = forms.TextInput(attrs={'id':'plasmid_id', 'class':'input'})
    )
    comments = forms.CharField(
        widget = forms.Textarea(
-           attrs = {'id':'comments', 'rows':10, 'cols':20}
+           attrs = {'id':'comments', 'rows':10, 'cols':20, 'class':'input'}
        )
    )
 
@@ -122,10 +122,22 @@ class TemplateHandler(webapp.RequestHandler):
 
 class ListingHandler(TemplateHandler):
 
+
    def get(self):
       prep_count = models.Prep().all().count()
       preps = models.Prep().all().fetch(prep_count)
-      template_vals = { 'prep_list': preps }
+
+      # Create a record class.
+      class record:
+         pass
+
+      record_list = []
+      for prep in preps:
+         rec = record()
+         rec.prep = prep
+         rec.plasmid = models.Plasmid.get_by_key_name(str(prep.plasmid_id))
+         record_list.append(rec)
+      template_vals = { 'record_list': record_list }
       self.template_render('prep_listing.html', template_vals)
 
 
@@ -146,13 +158,11 @@ class NewPrepHandler(TemplateHandler):
       enforce_login(self)
       id = get_new_entity_id('prep')
       plasmid_id = self.request.get('plasmid_id')
-      plasmid_name = models.Plasmid.get_by_key_name(plasmid_id).name
       str_id = get_str_id(self.request.get('plasmid_id'))
       new_prep = models.Prep(
-          key_name = str(),
+          key_name = str(id),
           id = id,
           plasmid_id = plasmid_id,
-          plasmid_name = plasmid_name,
           str_id = str_id,
 	  comments = self.request.get('comments')
       )
@@ -173,7 +183,7 @@ class NewPlasmidHandler(TemplateHandler):
       """Handle new plasmid form query."""
       enforce_login(self)
       template_vals = {
-         'form': PlasmidForm().
+         'form': PlasmidForm(),
          'entity': 'plasmid',
          'message': None,
       }
@@ -198,3 +208,29 @@ class NewPlasmidHandler(TemplateHandler):
          'message': 'Plasmid #%d stored to the database.' % id,
       }
       self.template_render('new_entity.html', template_vals)
+
+class PlasmidHandler(TemplateHandler):
+   def get(self, path):
+      plasmid = models.Plasmid.get_by_key_name(path)
+      if not plasmid:
+         self.template_render('404.html', {})
+         return
+      template_vals = {
+         'plasmid': plasmid,
+      }
+      self.template_render('plasmid.html', template_vals)
+
+class PrepHandler(TemplateHandler):
+   def get(self, path):
+      prep = models.Prep.get_by_key_name(path)
+      if not prep:
+         self.template_render('404.html', {})
+         return
+      plasmid = models.Plasmid.get_by_key_name(str(prep.plasmid_id))
+      template_vals = {
+         'prep': prep,
+         'plasmid': plasmid,
+      }
+      self.template_render('prep.html', template_vals)
+
+        

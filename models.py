@@ -16,13 +16,12 @@ class Prep(db.Model):
    creator = db.UserProperty(auto_current_user_add=True)
    id = db.IntegerProperty()
    plasmid_id = db.IntegerProperty()
-   plasmid_name = db.StringProperty()
    str_id = db.StringProperty()
    comments = db.TextProperty()
 
    @property
-   def location_tupe(self):
-      x = self.prep_num_id - 1
+   def location_tuple(self):
+      x = self.id - 1
       # Write 'x' in base 9: 81*a + 9*b + c.
       a = (x) / 81
       b = (x - 81*a) / 9
@@ -31,7 +30,7 @@ class Prep(db.Model):
 
    @property
    def location_string(self):
-      (box, row, col) = self.location_tupe
+      (box, row, col) = self.location_tuple
       return '%(box)d-%(row)s%(col)d' % {
          'box': box,
          'col': col,
