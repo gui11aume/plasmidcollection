@@ -7,8 +7,8 @@ class Plasmid(db.Model):
    id = db.IntegerProperty()
    name = db.StringProperty()
    seq = db.TextProperty()
-   comments = db.TextProperty()
    features = db.BlobProperty()
+   comments = db.TextProperty()
 
 
 class Prep(db.Model):

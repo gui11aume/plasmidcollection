@@ -3,14 +3,14 @@
   <br/>
   <br/>
 
-  <h2>Prep listing</h2>
+  <h2>List of plasmid preps</h2>
 
     <table id="prep_list">
     <thead>
       <tr><th>Location</th><th>Prep ID</th><th>Plasmid</th></tr>
     </thead>
     {% for record in record_list %}
-       <tr class="plasmid_row">
+       <tr class="{{alternator.next}}">
          <td>{{record.prep.location_string}}</td>
          <td><a href="/prep/{{record.prep.id}}">{{record.prep.str_id}}</td>
          <td><a href="/plasmid/{{record.plasmid.id}}">{{record.plasmid.name}}</a></td>

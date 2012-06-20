@@ -19,7 +19,7 @@ import models
 BASE_DIR = os.path.dirname(__file__)
 TEMPLATE_DIRS = [
    os.path.abspath(os.path.join(BASE_DIR, dir))
-   for dir in ('thegrandlocus_theme', 'templates')
+   for dir in ('thegrandlocus_theme/templates', 'templates')
 ]
 
 
@@ -55,7 +55,7 @@ def get_str_id(plasmid_id):
       _id = 1 + last_entity.id
    except IndexError:
       _id = 1
-   return '%s-%s' % (plasmid_id, '-ABCDEFGHIJKLMNOPQRSTUVWXYZ'[_id])
+   return '%d%s' % (plasmid_id, '-abcdefghijklmnopqrstuvwxyz'[_id])
 
 
 # Django forms objects.
@@ -68,12 +68,12 @@ class PlasmidForm(djangoforms.ModelForm):
            attrs = {'id':'seq', 'rows':10, 'cols':20, 'class':'input'}
        )
    )
-   comments = forms.CharField(
+   features = forms.CharField(
        widget = forms.Textarea(
            attrs = {'id':'comments', 'rows':10, 'cols':20, 'class':'input'}
        )
    )
-   features = forms.CharField(
+   comments = forms.CharField(
        widget = forms.Textarea(
            attrs = {'id':'features', 'rows':10, 'cols':20, 'class':'input'}
        )
@@ -81,7 +81,8 @@ class PlasmidForm(djangoforms.ModelForm):
 
    class Meta:
       model = models.Plasmid
-      fields = ['name', 'seq', 'comments', 'features']
+      fields = ['name', 'seq', 'features', 'comments']
+
 
 class PrepForm(djangoforms.ModelForm):
    plasmid_id = forms.CharField(
@@ -96,6 +97,18 @@ class PrepForm(djangoforms.ModelForm):
    class Meta:
       model = models.Prep
       fields = ['plasmid_id', 'comments']
+
+# Snippets.
+class alternator:
+   """An object that outputs the same elements as you call |next|."""
+   def __init__(self, objects):
+      self.n_objects = len(objects)
+      self.objects = objects
+      self.current = -1
+   @property
+   def next(self):
+      self.current += 1
+      return self.objects[self.current % self.n_objects]
 
 
 # Request handlers.
@@ -121,8 +134,6 @@ class TemplateHandler(webapp.RequestHandler):
 
 
 class ListingHandler(TemplateHandler):
-
-
    def get(self):
       prep_count = models.Prep().all().count()
       preps = models.Prep().all().fetch(prep_count)
@@ -137,12 +148,13 @@ class ListingHandler(TemplateHandler):
          rec.prep = prep
          rec.plasmid = models.Plasmid.get_by_key_name(str(prep.plasmid_id))
          record_list.append(rec)
-      template_vals = { 'record_list': record_list }
+
+      alt = alternator(("odd", "even"))
+      template_vals = { 'record_list': record_list, 'alternator': alt }
       self.template_render('prep_listing.html', template_vals)
 
 
 class NewPrepHandler(TemplateHandler):
-
    def get(self):
       """Handle new prep form query."""
       enforce_login(self)
@@ -156,18 +168,24 @@ class NewPrepHandler(TemplateHandler):
    def post(self):
       """Handle new prep data post."""
       enforce_login(self)
-      id = get_new_entity_id('prep')
-      plasmid_id = self.request.get('plasmid_id')
-      str_id = get_str_id(self.request.get('plasmid_id'))
-      new_prep = models.Prep(
-          key_name = str(id),
-          id = id,
-          plasmid_id = plasmid_id,
-          str_id = str_id,
-	  comments = self.request.get('comments')
-      )
-      new_prep.put()
-      message = 'Prep %s stored to the database.' % str_id,
+      try:
+         id = get_new_entity_id('prep')
+            # Raises an Exception if plasmid does not exist.
+         plasmid_id = models.Plasmid.get_by_key_name(
+             self.request.get('plasmid_id')).id
+         new_prep = models.Prep(
+             key_name = str(id),
+             id = id,
+             plasmid_id = plasmid_id,
+             str_id = get_str_id(plasmid_id),
+             comments = self.request.get('comments')
+         )
+         new_prep.put()
+         message = 'Prep %s has been stored.' % new_prep.str_id
+      except AttributeError:
+         message = 'Specified plasmid does not exist.'
+      except:
+         message = 'Input error.'
 
       template_vals = {
          'form': PrepForm(),
@@ -196,16 +214,16 @@ class NewPlasmidHandler(TemplateHandler):
       new_plasmid = models.Plasmid(
           key_name = str(id),
           id = id,
-	  name = self.request.get('name'),
-	  seq = self.request.get('seq'),
-	  comments = self.request.get('comments'),
+	  name = str(self.request.get('name')),
+	  seq = str(self.request.get('seq')),
+	  comments = str(self.request.get('comments')),
 	  features = str(self.request.get('features'))
       )
       new_plasmid.put()
       template_vals = {
          'form': PlasmidForm(),
          'entity': 'plasmid',
-         'message': 'Plasmid #%d stored to the database.' % id,
+         'message': 'Plasmid #%d has been stored.' % id,
       }
       self.template_render('new_entity.html', template_vals)
 
@@ -232,5 +250,3 @@ class PrepHandler(TemplateHandler):
          'plasmid': plasmid,
       }
       self.template_render('prep.html', template_vals)
-
-        
