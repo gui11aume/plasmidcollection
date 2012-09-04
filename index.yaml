@@ -3,5 +3,5 @@ indexes:
 - kind: Prep
   properties:
   - name: plasmid_id
-  - name: id
+  - name: nid
     direction: desc

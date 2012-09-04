@@ -1,0 +1,40 @@
+{% extends "plasmidcollection.html" %}
+{% block body %}
+  <br/>
+  <br/>
+
+  <h2>List of plasmid preps</h2>
+
+    <table id="prep_list" class="listing">
+    <thead>
+      <tr><th>Location</th><th>Prep ID</th><th>Plasmid name</th></tr>
+    </thead>
+    {% for prep in prep_list %}
+       <tr class="_highlight {{alternator.next}} prep"
+           data-comments="{{prep.comments}}">
+         <td>{{prep.location_string}}</td>
+         <td>{{prep.str_id}}</td>
+         <td>{{prep.plasmid_name}}</td>
+       </tr>
+    {% endfor %}
+    </table>
+
+    <h2>List of plasmids</h2>
+
+    <table id="plasmid_list" class="listing">
+    <thead>
+      <tr><th>Plasmid ID</th><th>Plasmid name</th></tr>
+    </thead>
+    {% for plasmid in plasmid_list %}
+       <tr class="_highlight {{alternator.next}} hand_pointer"
+           onclick="document.location = '/plasmid/{{plasmid.nid}}';">
+         <td>{{plasmid.nid}}</td>
+         <td>{{plasmid.name}}</td>
+       </tr>
+    {% endfor %}
+    </table>
+
+    <a href="/newprep">New prep</a>
+    <br/>
+    <a href="/newplasmid">New plasmid</a>
+{% endblock %}
