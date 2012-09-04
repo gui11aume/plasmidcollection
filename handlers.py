@@ -3,6 +3,7 @@
 import setup_django_version
 
 import os
+import re
 try:
    import json
 except ImportError:
@@ -46,6 +47,12 @@ class PlasmidForm(djangoforms.ModelForm):
      )
    )
 
+   def clean_seq(self):
+      data = self.cleaned_data['seq'].upper()
+      if re.search('[^GATCN]', data):
+         raise forms.ValidationError('Non DNA letters in sequence.')
+      return data
+
    class Meta:
       model = models.Plasmid
       fields = ['name', 'seq', 'comments']
@@ -58,8 +65,16 @@ class PrepForm(djangoforms.ModelForm):
    comments = forms.CharField(
      widget = forms.Textarea(
        attrs = {'id':'comments', 'rows':10, 'cols':20, 'class':'input'}
-     )
+     ),
+     required = False
    )
+
+   def clean_plasmid_id(self):
+      data = self.cleaned_data['plasmid_id']
+      # Raises an Exception if plasmid does not exist.
+      if models.Plasmid.get_by_key_name(data) is None:
+         raise forms.ValidationError('Plasmid does not exist.')
+      return data
 
    class Meta:
       model = models.Prep
@@ -95,12 +110,12 @@ class ListingHandler(TemplateHandler):
       prep_list = models.Prep().all().fetch(prep_count)
       plasmid_list = models.Plasmid.all().fetch(plasmid_count)
 
-      plasmid_by_id = dict(
-        [(plasmid.nid, plasmid) for plasmid in plasmid_list]
+      plasmid_name_by_id = dict(
+        [(plasmid.nid, plasmid.name) for plasmid in plasmid_list]
       )
 
       for prep in prep_list:
-         prep.plasmid_name = plasmid_by_id[prep.nid].name
+         prep.plasmid_name = plasmid_name_by_id[prep.plasmid_id]
 
       alt = utils.alternator(("odd", "even"))
       template_vals = {
@@ -141,25 +156,16 @@ class NewPrepHandler(TemplateHandler):
       plasmid_id = int(form.cleaned_data['plasmid_id'])
       comments = form.cleaned_data['comments']
 
-      try:
-         # Raises an Exception if plasmid does not exist.
-         models.Plasmid.get_by_key_name(str(plasmid_id))
-      except AttributeError:
-         message = 'Specified plasmid does not exist.'
-      except Exception, e:
-         message = str(e)
-         #message = 'Input error.'
-      else:
-         nid = utils.get_new_entity_id('prep')
-         new_prep = models.Prep(
-             key_name = str(nid),
-             nid = nid,
-             plasmid_id = plasmid_id,
-             str_id = utils.get_str_id(plasmid_id),
-             comments = comments
-         )
-         new_prep.put()
-         message = 'Prep %s has been stored.' % new_prep.str_id
+      nid = utils.get_new_entity_id('prep')
+      new_prep = models.Prep(
+          key_name = str(nid),
+          nid = nid,
+          plasmid_id = plasmid_id,
+          str_id = utils.get_str_id(plasmid_id),
+          comments = comments
+      )
+      new_prep.put()
+      message = 'Prep %s has been stored.' % new_prep.str_id
 
       template_vals = {
          'form': PrepForm(),
