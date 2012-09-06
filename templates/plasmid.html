@@ -5,6 +5,7 @@
 
   <h2 id="plasmid_id" data-name="{{plasmid.name}}">Plasmid {{plasmid.name}} (#{{plasmid.nid}})</h2>
 
+
   {% if plasmid.seq %}
   <br/ >
   <div id="graph_container">
@@ -14,10 +15,12 @@
   {% endif %}
 
   <div id="comments" style="text-align:center;">{{plasmid.comments}}</div>
-
-  {% if plasmid.features %}
   <br />
+
+  {% if plasmid.seq %}
   <h2>Features</h2>
+  
+  <form action="" method="post">
   <table id="feature_table">
     <thead>
     <tr><th>Feature</th><th>Start</th><th>End</th><th>Orientation</th><th>Type</th></tr>
@@ -25,41 +28,42 @@
 
   {% for index, feature in zip_features %}
   <tr class="feature_data" data-fname="{{feature.name}}" data-start="{{feature.start}}" data-end="{{feature.end}}" data-orientation="{{feature.orientation}}" data-ftype="{{feature.ftype}}">
-  <td>{{feature.name}}</td><td>{{feature.start}}</td><td>{{feature.end}}</td><td>{{feature.orientation}}</td><td>{{feature.ftype}}</td>
+  <td>{{feature.name}}</td><td>{{feature.start}}</td><td>{{feature.end}}</td><td>{{feature.orientation}}</td><td class="ftype_{{feature.ftype}}">{{feature.ftype}}</td>
   <td>
-    <form action="" method="post">
-      <input type="hidden" name="delete" value="{{index}}">
-      <input type="submit" value="Delete">
+    <input type="hidden" name="delete" value="{{index}}">
+    <input type="submit" value="Delete" class="edit">
     </form>
   </td>
   </tr>
   {% endfor %}
 
-  </table>
-  {% endif %}
-
   {% if can_edit %}
-  <!-- New feature form. -->
-  <br />
-  <form method="post" action="">
-  <table id="newfeature">
-    {% for field in form %}
-      {% if field.errors %}
-      <tr><th style="background-color:white;"></th>
-      <td>{{field.errors}}</td></tr>
-      {% endif %}
-    <tr>
-      <th>{{field.label_tag}}</th>
-      <td>{{field}}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  <input type="submit" value="Submit" />
-  </form>
+  <tr><td style="text-align:left;"><button type="button" onclick="$('.edit').show(); $(this).hide()">Edit features</button></td></tr>
   {% endif %}
+  </table>
+  </form>
+
+    {% if can_edit %}
+    <!-- New feature form. -->
+    <br />
+    <form method="post" action="" class="edit">
+    <table id="newfeature_table">
+      {% for field in form %}
+        {% if field.errors %}
+        <tr><th style="background-color:white;"></th>
+        <td>{{field.errors}}</td></tr>
+        {% endif %}
+      <tr>
+        <th>{{field.label_tag}}</th>
+        <td>{{field}}</td>
+      </tr>
+      {% endfor %}
+    <tr><td style="text-align:left;"><input type="submit" value="Submit" /></td></tr>
+    </table>
+    </form>
+    {% endif %}
 
   <!-- Plasmid sequence. -->
-  {% if plasmid.seq %}
   <br />
   <h2>Sequence</h2>
   <div id="full_sequence">{{plasmid.seq}}</div>
