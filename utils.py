@@ -7,6 +7,8 @@ from google.appengine.api import users
 import config
 import models
 
+def check(x):
+   return sha1(x.lower()).hexdigest()
 
 class alternator:
    """Simple alternator to change table row styling in the
@@ -21,22 +23,12 @@ class alternator:
       return self.objects[self.current % self.n_objects]
 
 
-def enforce_login(parent):
-   """Convenience function to enforce user log-in."""
-   # Get user login status.
-   user = users.get_current_user()
-   if user:
-      return user
-   else:
-      # User is not logged in... Go log in then.
-      parent.redirect(users.create_login_url(parent.request.uri))
-
 def is_admin(user):
-   return sha1(user.email()).hexdigest() in config.administrators
+   return check(user.email()) in config.administrators
 
 def is_editor(user):
    return is_admin(user) or \
-            sha1(user.email()).hexdigest() in config.authorized_editors
+         check(user.email()) in config.authorized_editors
 
 
 def get_new_entity_id(entity):

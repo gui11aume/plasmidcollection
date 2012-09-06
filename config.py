@@ -12,3 +12,10 @@ authorized_editors = [
     '1c0fc8b0a795545d81f9b11916db24ff4e6ec534',
     '97aada4c0ae2d2a147c322e9033b639b2c18eb43',
 ]
+
+ftypes = (
+    'gene',
+    'promoter',
+    'origin',
+    'other',
+)

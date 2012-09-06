@@ -39,19 +39,19 @@ class PlasmidForm(djangoforms.ModelForm):
    seq = forms.CharField(
      widget = forms.Textarea(
        attrs = {'id':'seq', 'rows':10, 'cols':20, 'class':'input'}
-     )
+     ),
+     required = False
    )
    comments = forms.CharField(
      widget = forms.Textarea(
        attrs = {'id':'comments', 'rows':10, 'cols':20, 'class':'input'}
-     )
+     ),
+     required = False
    )
 
    def clean_seq(self):
       data = self.cleaned_data['seq'].upper()
-      if re.search('[^GATCN]', data):
-         raise forms.ValidationError('Non DNA letters in sequence.')
-      return data
+      return re.sub('[^GATCN]', '', data)
 
    class Meta:
       model = models.Plasmid
@@ -59,7 +59,7 @@ class PlasmidForm(djangoforms.ModelForm):
 
 
 class PrepForm(djangoforms.ModelForm):
-   plasmid_id = forms.CharField(
+   plasmid_id = forms.IntegerField(
      widget = forms.TextInput(attrs={'id':'plasmid_id', 'class':'input'})
    )
    comments = forms.CharField(
@@ -72,13 +72,40 @@ class PrepForm(djangoforms.ModelForm):
    def clean_plasmid_id(self):
       data = self.cleaned_data['plasmid_id']
       # Raises an Exception if plasmid does not exist.
-      if models.Plasmid.get_by_key_name(data) is None:
+      if models.Plasmid.get_by_key_name(str(data)) is None:
          raise forms.ValidationError('Plasmid does not exist.')
       return data
 
    class Meta:
       model = models.Prep
       fields = ['plasmid_id', 'comments']
+
+class FeatureForm(djangoforms.ModelForm):
+   name = forms.CharField(
+     widget = forms.TextInput(attrs={'id':'name', 'class':'input'})
+   )
+
+   start = forms.IntegerField(
+     widget = forms.TextInput(
+       attrs = {'id':'start', 'class':'input'}
+     )
+   )
+
+   end = forms.IntegerField(
+     widget = forms.TextInput(
+       attrs = {'id':'end', 'class':'input'}
+     )
+   )
+
+   orientation = forms.ChoiceField(
+      choices = (('+','+'), ('-','-')),
+      initial = '+'
+   )
+
+   ftype = forms.ChoiceField(
+      choices = ((ft,ft) for ft in config.ftypes),
+      label = 'Type'
+   )
 
 
 # Request handlers.
@@ -130,7 +157,10 @@ class ListingHandler(TemplateHandler):
 class NewPrepHandler(TemplateHandler):
    def get(self):
       """Handle new prep form query."""
-      utils.enforce_login(self)
+      user = users.get_current_user()
+      if user is None:
+         self.redirect(users.create_login_url(self.request.uri))
+         return
 
       template_vals = {
          'form': PrepForm(),
@@ -141,44 +171,56 @@ class NewPrepHandler(TemplateHandler):
 
    def post(self):
       """Handle new prep data post."""
-      user = utils.enforce_login(self)
+      user = users.get_current_user()
+      if user is None:
+         self.redirect(users.create_login_url(self.request.uri))
+         return
       if not utils.is_editor(user):
          # Error 401, user is not authorized.
          self.error(401)
-         self.template_render('401.html', {})
+         self.template_render('401.html')
          return
 
       form = PrepForm(data=self.request.POST)
-      if not form.is_valid():
-         self.get()
-         return
 
-      plasmid_id = int(form.cleaned_data['plasmid_id'])
-      comments = form.cleaned_data['comments']
+      if form.is_valid():
+         plasmid_id = form.cleaned_data['plasmid_id']
+         comments = form.cleaned_data['comments']
+         nid = utils.get_new_entity_id('prep')
 
-      nid = utils.get_new_entity_id('prep')
-      new_prep = models.Prep(
-          key_name = str(nid),
-          nid = nid,
-          plasmid_id = plasmid_id,
-          str_id = utils.get_str_id(plasmid_id),
-          comments = comments
-      )
-      new_prep.put()
-      message = 'Prep %s has been stored.' % new_prep.str_id
+         new_prep = models.Prep(
+             key_name = str(nid),
+             nid = nid,
+             plasmid_id = plasmid_id,
+             str_id = utils.get_str_id(plasmid_id),
+             comments = comments
+         )
+         new_prep.put()
+         message = 'Prep %s has been stored.' % new_prep.str_id
 
-      template_vals = {
-         'form': PrepForm(),
-         'entity': 'prep',
-         'message': message,
-      }
+         template_vals = {
+            'form': PrepForm(),
+            'entity': 'prep',
+            'message': message,
+         }
+      else:
+         template_vals = {
+            'form': form,
+            'entity': 'prep',
+            'message': ''
+         }
+
       self.template_render('new_entity.html', template_vals)
 
 
 class NewPlasmidHandler(TemplateHandler):
    def get(self):
       """Handle new plasmid form query."""
-      utils.enforce_login(self)
+      user = users.get_current_user()
+      if user is None:
+         self.redirect(users.create_login_url(self.request.uri))
+         return
+
       template_vals = {
          'form': PlasmidForm(),
          'entity': 'plasmid',
@@ -188,7 +230,11 @@ class NewPlasmidHandler(TemplateHandler):
 
    def post(self):
       """Handle new plasmid data post."""
-      user = utils.enforce_login(self)
+      user = users.get_current_user()
+      if user is None:
+         self.redirect(users.create_login_url(self.request.uri))
+         return
+
       if not utils.is_editor(user):
          # Error 401, user is not authorized.
          self.error(401)
@@ -196,15 +242,12 @@ class NewPlasmidHandler(TemplateHandler):
          return
 
       form = PlasmidForm(data=self.request.POST)
-      if not form.is_valid():
-         self.get()
-         return
 
-      name = form.cleaned_data['name']
-      seq = form.cleaned_data['seq']
-      comments = form.cleaned_data['comments']
+      if form.is_valid():
+         name = form.cleaned_data['name']
+         seq = form.cleaned_data['seq']
+         comments = form.cleaned_data['comments']
 
-      try:
          nid = utils.get_new_entity_id('plasmid')
          new_plasmid = models.Plasmid(
              key_name = str(nid),
@@ -215,52 +258,87 @@ class NewPlasmidHandler(TemplateHandler):
              features = '[]'
          )
          new_plasmid.put()
-      except Exception:
-         message = 'Input error.'
-      else:
          message = 'Plasmid #%d has been stored.' % nid
 
-      template_vals = {
-         'form': PlasmidForm(),
-         'entity': 'plasmid',
-         'message': message,
-      }
+         template_vals = {
+            'form': PlasmidForm(),
+            'entity': 'plasmid',
+            'message': message,
+         }
+
+      else:
+         template_vals = {
+            'form': form,
+            'entity': 'plasmid',
+            'message': ''
+         }
+
       self.template_render('new_entity.html', template_vals)
 
 
 class PlasmidHandler(TemplateHandler):
    def get(self, path):
+      user = users.get_current_user()
+
       plasmid = models.Plasmid.get_by_key_name(path)
       if not plasmid:
          self.template_render('404.html', {})
          return
 
-      try:
-         features = json.loads(plasmid.features or '[]'),
-      except Exception:
-         features = []
-         message = '** ERROR **'
-      else:
-         message = ''
+      features = json.loads(plasmid.features)
 
       template_vals = {
-         'message': message,
          'plasmid': plasmid,
-         'features': features,
-         'can_edit': utils.is_editor(users.get_current_user()),
+         'zip_features': enumerate(features),
+         'can_edit': user and utils.is_editor(user),
+         'form': FeatureForm()
       }
       self.template_render('plasmid.html', template_vals)
 
+   def post(self, path):
+      user = users.get_current_user()
+      if user is None:
+         self.redirect(users.create_login_url(self.request.uri))
+         return
 
-#class PrepHandler(TemplateHandler):
-#   def get(self, path):
-#      prep = models.Prep.get_by_key_name(path)
-#      if not prep:
-#         self.template_render('404.html', {})
-#         return
-#      plasmid = models.Plasmid.get_by_key_name(str(prep.plasmid_id))
-#      template_vals = {
-#         'prep': prep,
-#         'plasmid': plasmid,
-#      }
-#      self.template_render('prep.html', template_vals)
+      if not utils.is_editor(user):
+         # Error 401, user is not authorized.
+         self.error(401)
+         self.template_render('401.html', {})
+         return
+
+      plasmid = models.Plasmid.get_by_key_name(path)
+      features = json.loads(plasmid.features)
+
+      # Check if this is a delete request.
+      if self.request.get('delete', None) is None:
+         # It is a new feature request.
+         form = FeatureForm(data=self.request.POST)
+         if form.is_valid():
+            features.append({
+              'name': form.cleaned_data['name'],
+              'start': form.cleaned_data['start'],
+              'end': form.cleaned_data['end'],
+              'orientation': form.cleaned_data['orientation'],
+              'ftype': form.cleaned_data['ftype'],
+            })
+            # Save feature to data store.
+            plasmid.features = json.dumps(features)
+            plasmid.put()
+            # Clean form.
+            form = FeatureForm()
+      else:
+         # It is a delete request.
+         delete_feature = int(self.request.get('delete'))
+         features.pop(delete_feature)
+         plasmid.features = json.dumps(features)
+         plasmid.put()
+         form = FeatureForm()
+
+      template_vals = {
+         'plasmid': plasmid,
+         'zip_features': enumerate(features),
+         'can_edit': utils.is_editor(users.get_current_user()),
+         'form': form,
+      }
+      self.template_render('plasmid.html', template_vals)

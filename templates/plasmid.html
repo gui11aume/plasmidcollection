@@ -2,17 +2,78 @@
 {% block body %}
 <br/>
 <br/>
- 
-  <h2>Plasmid {{plasmid.name}} (#{{plasmid.nid}})</h2>
 
-  <table>
-    <tr><td>Sequence</td><td>{{plasmid.seq}}</td></tr>
-    <tr><td>Comments</td><td>{{plasmid.comments}}</td></tr>
-    <tr><td>Features</td><td>{{plasmid.features}}</td></tr>
-  </table>
+  <h2 id="plasmid_id" data-name="{{plasmid.name}}">Plasmid {{plasmid.name}} (#{{plasmid.nid}})</h2>
 
-  {% if can_edit %}
-    User can edit.
+  {% if plasmid.seq %}
+  <br/ >
+  <div id="graph_container">
+  <canvas id="graph" width="320" height="320"></canvas>
+  </div>
+  <br/ >
   {% endif %}
 
+  <div id="comments" style="text-align:center;">{{plasmid.comments}}</div>
+
+  {% if plasmid.features %}
+  <br />
+  <h2>Features</h2>
+  <table id="feature_table">
+    <thead>
+    <tr><th>Feature</th><th>Start</th><th>End</th><th>Orientation</th><th>Type</th></tr>
+    </thead>
+
+  {% for index, feature in zip_features %}
+  <tr class="feature_data" data-fname="{{feature.name}}" data-start="{{feature.start}}" data-end="{{feature.end}}" data-orientation="{{feature.orientation}}" data-ftype="{{feature.ftype}}">
+  <td>{{feature.name}}</td><td>{{feature.start}}</td><td>{{feature.end}}</td><td>{{feature.orientation}}</td><td>{{feature.ftype}}</td>
+  <td>
+    <form action="" method="post">
+      <input type="hidden" name="delete" value="{{index}}">
+      <input type="submit" value="Delete">
+    </form>
+  </td>
+  </tr>
+  {% endfor %}
+
+  </table>
+  {% endif %}
+
+  {% if can_edit %}
+  <!-- New feature form. -->
+  <br />
+  <form method="post" action="">
+  <table id="newfeature">
+    {% for field in form %}
+      {% if field.errors %}
+      <tr><th style="background-color:white;"></th>
+      <td>{{field.errors}}</td></tr>
+      {% endif %}
+    <tr>
+      <th>{{field.label_tag}}</th>
+      <td>{{field}}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  <input type="submit" value="Submit" />
+  </form>
+  {% endif %}
+
+  <!-- Plasmid sequence. -->
+  {% if plasmid.seq %}
+  <br />
+  <h2>Sequence</h2>
+  <div id="full_sequence">{{plasmid.seq}}</div>
+  {% endif %}
+
+  <script type="text/javascript">
+    draw_plasmid();
+    var size = $('#full_sequence').text().length;
+    $('.feature_data').map(function() {
+      var start = parseFloat($(this).attr('data-start'));
+      var end = parseFloat($(this).attr('data-end'));
+      var ftype = $(this).attr('data-ftype');
+      draw_feature(start/size, end/size, ftype);
+    });
+    write_plasmid_info();
+  </script>
 {% endblock %}

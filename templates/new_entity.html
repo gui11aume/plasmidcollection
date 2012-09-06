@@ -3,16 +3,31 @@
 <br/>
 <br/>
  
-  {% if message %}
-  <p id="message">{{message}}</p>
-  {% endif %}
-
   <h2>Enter new {{entity}}</h2>
 
   <form method="post" action="">
   <table id="new">
-    {{form}}
+    {% for field in form %}
+      {% if field.errors %}
+      <tr><th style="background-color:white;"></th>
+      <td>{{field.errors}}</td></tr>
+      {% endif %}
+    <tr>
+      <th>{{field.label_tag}}</th>
+      <td>{{field}}</td>
+    </tr>
+    {% endfor %}
   </table>
   <input type="submit" value="Submit" />
   </form>
+
+  <div style="text-align:center;">
+  {% if message %}
+  <p id="message">{{message}}</p>
+  <br />
+  {% endif %}
+
+  <a href="/">Back</a>
+  </div>
+
 {% endblock %}
