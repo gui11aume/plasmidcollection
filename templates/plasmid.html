@@ -1,5 +1,6 @@
 {% extends "plasmidcollection.html" %}
 {% block body %}
+
 <br/>
 <br/>
 
@@ -20,28 +21,42 @@
   {% if plasmid.seq %}
   <h2>Features</h2>
   
-  <form action="" method="post">
   <table id="feature_table">
     <thead>
     <tr><th>Feature</th><th>Start</th><th>End</th><th>Orientation</th><th>Type</th></tr>
     </thead>
 
   {% for index, feature in zip_features %}
-  <tr class="feature_data" data-fname="{{feature.name}}" data-start="{{feature.start}}" data-end="{{feature.end}}" data-orientation="{{feature.orientation}}" data-ftype="{{feature.ftype}}">
-  <td>{{feature.name}}</td><td>{{feature.start}}</td><td>{{feature.end}}</td><td>{{feature.orientation}}</td><td class="ftype_{{feature.ftype}}">{{feature.ftype}}</td>
-  <td>
-    <input type="hidden" name="delete" value="{{index}}">
-    <input type="submit" value="Delete" class="edit">
-    </form>
-  </td>
+  <tr class="feature_data"
+        data-fname="{{feature.name}}"
+        data-start="{{feature.start}}"
+        data-end="{{feature.end}}"
+        data-orientation="{{feature.orientation}}"
+        data-ftype="{{feature.ftype}}">
+    <td>{{feature.name}}</td>
+    <td>{{feature.start}}</td>
+    <td>{{feature.end}}</td>
+    <td>{{feature.orientation}}</td>
+    <td class="ftype_{{feature.ftype}}">{{feature.ftype}}</td>
+    {# Table overflow. #}
+    <td>
+      <button onclick="select_sequence({{feature.start}},{{feature.end}})">Select</button>
+    </td>
+    <td>
+      <form action="" method="post"
+              onsubmit="return confirm('Confirm deletion?');">
+        <input type="hidden" name="delete" value="{{index}}">
+        <input type="submit" value="Delete" class="edit">
+      </form>
+    </td>
   </tr>
   {% endfor %}
 
+  {# 'Edit features' button. #}
   {% if can_edit %}
   <tr><td style="text-align:left;"><button type="button" onclick="$('.edit').show(); $(this).hide()">Edit features</button></td></tr>
   {% endif %}
   </table>
-  </form>
 
     {% if can_edit %}
     <!-- New feature form. -->
