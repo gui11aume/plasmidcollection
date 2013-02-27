@@ -45,14 +45,16 @@ def get_new_entity_id(entity):
       return 1
 
 
-def get_str_id(plasmid_id):
+def get_str_id(plasmid_id, preptype):
    """Return the str_id of for a new Prep object."""
    QUERY = "WHERE plasmid_id = :1 ORDER BY nid DESC LIMIT 1"
-   try:
-      last_entity = models.Prep().gql(QUERY, plasmid_id)[0]
-      nid = 1 + last_entity.nid
-   except IndexError:
-      nid = 1
-   return '%d%s' % (plasmid_id, '-abcdefghijklmnopqrstuvwxyz'[nid])
+   nid = 1 + models.Prep().gql(QUERY, plasmid_id).count()
+   str_id = '%d%s' % (plasmid_id, '-abcdefghijklmnopqrstuvwxyz'[nid])
+   if preptype == 'mini':
+      return str_id
+   elif preptype == 'maxi':
+      return str_id.upper()
+   else:
+      raise Exception
 
 

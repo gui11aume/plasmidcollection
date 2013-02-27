@@ -36,10 +36,11 @@ class Prep(db.Model):
    @property
    def location_tuple(self):
       x = self.nid - 1
-      # Write 'x' in base 9: 81*a + 9*b + c.
-      a = (x) / 81
-      b = (x - 81*a) / 9
-      c = (x - 81*a - 9*b)
+      # Write 'x' in base 10: 100*a + 10*b + c.
+      # NOTE: we could also use 'str' representation.
+      a = (x) / 100
+      b = (x - 100*a) / 10
+      c = (x - 100*a - 10*b)
       return (a+1, b+1, c+1)
 
    @property
@@ -48,5 +49,5 @@ class Prep(db.Model):
       return '%(box)d-%(row)s%(col)d' % {
          'box': box,
          'col': col,
-         'row': '-ABCDEGFHI'[row]
+         'row': '-ABCDEGFHIJ'[row]
       }

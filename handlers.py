@@ -68,6 +68,9 @@ class PrepForm(djangoforms.ModelForm):
      ),
      required = False
    )
+   preptype = forms.ChoiceField(
+      choices = [('mini', 'mini'), ('maxi', 'maxi')]
+   )
 
    def clean_plasmid_id(self):
       data = self.cleaned_data['plasmid_id']
@@ -132,21 +135,21 @@ class TemplateHandler(webapp.RequestHandler):
 
 class ListingHandler(TemplateHandler):
    def get(self):
-      prep_count = models.Prep().all().count()
-      plasmid_count = models.Plasmid().all().count()
-      prep_list = models.Prep().all().fetch(prep_count)
-      plasmid_list = models.Plasmid.all().fetch(plasmid_count)
+      preps = models.Prep().all().order('nid')
+      plasmids = models.Plasmid.all().order('nid')
 
       plasmid_name_by_id = dict(
-        [(plasmid.nid, plasmid.name) for plasmid in plasmid_list]
+        [(plasmid.nid, plasmid.name) for plasmid in plasmids]
       )
 
-      for prep in prep_list:
+      prep_list = []
+      for prep in preps:
          prep.plasmid_name = plasmid_name_by_id[prep.plasmid_id]
+         prep_list.append(prep)
 
       alt = utils.alternator(("odd", "even"))
       template_vals = {
-        'plasmid_list': plasmid_list,
+        'plasmid_list': plasmids,
         'prep_list': prep_list,
         'alternator': alt
       }
@@ -184,6 +187,7 @@ class NewPrepHandler(TemplateHandler):
       form = PrepForm(data=self.request.POST)
 
       if form.is_valid():
+         preptype = form.cleaned_data['preptype']
          plasmid_id = form.cleaned_data['plasmid_id']
          comments = form.cleaned_data['comments']
          nid = utils.get_new_entity_id('prep')
@@ -192,7 +196,7 @@ class NewPrepHandler(TemplateHandler):
              key_name = str(nid),
              nid = nid,
              plasmid_id = plasmid_id,
-             str_id = utils.get_str_id(plasmid_id),
+             str_id = utils.get_str_id(plasmid_id, preptype),
              comments = comments
          )
          new_prep.put()
