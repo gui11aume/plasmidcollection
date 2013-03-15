@@ -1,0 +1,9 @@
+../google_appengine/remote_api_shell.py plasmidcollection
+
+import models
+Plasmids = models.Plasmid.all().fetch(1000)
+Preps = models.Prep.all().fetch(1000)
+Plassmids[16].name
+Plasmids[16].comments
+Plasmids[16].comments = 'Vesicular Stomatitis Virus G protein (envelope) for pseudotyping retroviral particles. Broad host range infection. Ampicillin selection.'
+Plasmids[16].put()

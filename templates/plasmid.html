@@ -44,7 +44,7 @@
     </td>
     <td>
       <form action="" method="post"
-              onsubmit="return confirm('Confirm deletion?');">
+              onsubmit="return confirm('Delete {{feature.name}}?');">
         <input type="hidden" name="delete" value="{{index}}">
         <input type="submit" value="Delete" class="edit">
       </form>
