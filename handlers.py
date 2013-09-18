@@ -69,7 +69,8 @@ class PrepForm(djangoforms.ModelForm):
      required = False
    )
    preptype = forms.ChoiceField(
-      choices = [('mini', 'mini'), ('maxi', 'maxi')]
+      choices = [('mini', 'mini'), ('maxi', 'maxi'),
+         ('b-lib', 'b-lib')]
    )
 
    def clean_plasmid_id(self):

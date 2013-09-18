@@ -11,6 +11,7 @@ authorized_editors = [
     'f555c6e9f091bdbaec8b4c6b0e0567cca0bb2e72',
     '1c0fc8b0a795545d81f9b11916db24ff4e6ec534',
     '97aada4c0ae2d2a147c322e9033b639b2c18eb43',
+    '3b4e261f2c53a4c42f2d756064aec6f345be9cf3',
 ]
 
 ftypes = (

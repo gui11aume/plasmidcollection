@@ -54,6 +54,8 @@ def get_str_id(plasmid_id, preptype):
       return str_id
    elif preptype == 'maxi':
       return str_id.upper()
+   elif preptype == 'b-lib':
+      return str_id.upper() + '*'
    else:
       raise Exception
 
