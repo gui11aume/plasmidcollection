@@ -136,6 +136,13 @@ class TemplateHandler(webapp.RequestHandler):
 
 class ListingHandler(TemplateHandler):
    def get(self):
+      # Manage user session.
+      user = users.get_current_user()
+      sessact = 'Sign out' if user else 'Login'
+      url = users.create_logout_url('/') if user else \
+            users.create_login_url('/')
+
+      # Fetch content of the collection.
       preps = models.Prep().all().order('nid')
       plasmids = models.Plasmid.all().order('nid')
 
@@ -152,7 +159,9 @@ class ListingHandler(TemplateHandler):
       template_vals = {
         'plasmid_list': plasmids,
         'prep_list': prep_list,
-        'alternator': alt
+        'alternator': alt,
+        'sessact': sessact,
+        'url': url,
       }
       self.template_render('plasmid_collection_listing.html',
         template_vals)
